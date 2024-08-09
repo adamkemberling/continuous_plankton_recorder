@@ -1,15 +1,72 @@
 ---
 title: "Dominant Species Plot Editing"
-format: html
+description: | 
+  Testing alternative plots for dominant species responses
+date: "Updated on: `r Sys.Date()`"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    df-print: kable
+    self-contained: true
+    fig-width: 7
+    fig-height: 6
+execute: 
+  echo: true
+  warning: false
+  message: false
+  fig.align: "center"
+  comment: ""
 ---
 
-## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+```{r}
+#| label: setup-packages
+# load packages
+library(here)
+library(readxl)
+library(ggstream)
+library(ggforce)
+library(tidyverse)
+library(gmRi)
+library(scales)
+library(rcartocolor)
+library(patchwork)
+library(gt)
+library(ggpubr)
+library(ggh4x)
 
-## Running Code
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+# Set theme
+theme_set(
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold",size = 14),
+    axis.text = element_text(size = 11),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 11),
+    strip.background = element_rect(color = "black"),
+    panel.background = element_rect(color = "black"),
+    panel.grid.minor = element_blank())
+)
+
+# levels for season factors
+season_lvls <- c("Winter", "Spring", "Summer", "Autumn")
+
+
+#
+set.seed(123)
+```
+
+```{r}
+#| results: asis
+
+gmRi::use_gmri_style_rmd()
+```
+
+
+
 
 ```{r}
 # Load the Data:
@@ -30,6 +87,15 @@ load_folder <- function(folder, col_names = TRUE){
 # Function to scale subgroups as a vector
 scale_this <- function(x){ (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE) }
 ```
+
+
+
+
+## Figure Edits for Figure 3 of the Simulation Study
+
+Reviewer Comment: 
+ > In figure 3 its hard to see which temperature optima dominate, is there another way to visualize this pattern? Also using a common color scale for sizes of protists and copepods seems unnecessary, and reduces the dynamic range within each panel.
+
 
 
 
@@ -60,8 +126,7 @@ named_group_split <- function(.tbl, ...) {
 
   grouped %>% 
     group_split() %>% 
-    rlang::set_names(names)
-}
+    rlang::set_names(names)}
 
 
 
@@ -91,9 +156,13 @@ dom_new_ac <- dom_new_ac %>%
     
     # Append it back
     df_out <- bind_rows(control_bio, x_grouping)
-    return(df_out)}) %>% 
-  mutate(temp_opt = str_c(temp_opt, "C"),
-         hw_season = str_c(hw_season, " Heatwave"))
+    return(df_out)})  %>% 
+  mutate(
+    temp_opt = str_c(temp_opt, "C"),
+    hw_season = factor(
+      str_c(hw_season, " Heatwave"),
+      levels = str_c(season_lvls, " Heatwave")),
+    season = factor(season, levels = season_lvls))
 
 
 
@@ -124,8 +193,12 @@ dom_new_pc <- dom_new_pc %>%
     # Append it back
     df_out <- bind_rows(control_bio, x_grouping)
     return(df_out)})  %>% 
-  mutate(temp_opt = str_c(temp_opt, "C"),
-         hw_season = str_c(hw_season, " Heatwave"))
+  mutate(
+    temp_opt = str_c(temp_opt, "C"),
+    hw_season = factor(
+      str_c(hw_season, " Heatwave"),
+      levels = str_c(season_lvls, " Heatwave")),
+    season = factor(season, levels = season_lvls))
 
 
 
@@ -156,8 +229,12 @@ dom_new_pr <- dom_new_pr %>%
     # Append it back
     df_out <- bind_rows(control_bio, x_grouping)
     return(df_out)})  %>% 
-  mutate(temp_opt = str_c(temp_opt, "C"),
-         hw_season = str_c(hw_season, " Heatwave"))
+  mutate(
+    temp_opt = str_c(temp_opt, "C"),
+    hw_season = factor(
+      str_c(hw_season, " Heatwave"),
+      levels = str_c(season_lvls, " Heatwave")),
+    season = factor(season, levels = season_lvls))
 
 
 
@@ -165,16 +242,19 @@ dom_new_pr <- dom_new_pr %>%
 
 
 
-#### Paper Figure 3, Two Scales
+# Reviewer Response: 2  Color Scales
 
-In figure 3 its hard to see which temperature optima dominate, is there another way to visualize this pattern? Also using a common color scale for sizes of protists and copepods seems unnecessary, and reduces the dynamic range within each panel.
+In figure 3 
+1. Its hard to see which temperature optima dominate, 
+2. is there another way to visualize this pattern? 
+3. Also using a common color scale for sizes of protists and copepods seems unnecessary, and reduces the dynamic range within each panel.
 
 ```{r}
 #| label: figure-3-twoscales
 
   
   
-# Testing
+# Table for hw rectangles
 hw_fill <- c("transparent", "#FDDBC770")
 rect_df <- data.frame(
   hw_status = c("Year 0:\nPre-heatwave\nEquilibrium", "Year 1:\nSeasonal heatwave"),
@@ -183,6 +263,8 @@ rect_df <- data.frame(
   ymin = rep(-Inf, 2),
   ymax = rep(Inf, 2))
 
+# shape assignment by temp
+temp_shape_vals <- c("16C" = 15, "20C" = 16, "24C" = 17, "28C" = 18)
 
 
 # Line Chart:
@@ -207,11 +289,7 @@ f3_a <- dom_new_ac %>%
       aes(year, absolute_bio, shape = fct_rev(as.character(temp_opt)), color = max_size), 
     size = 2) +
     scale_shape_manual(
-      values = c(
-        "16C" = 15,
-        "20C" = 16,
-        "24C" = 17,
-        "28C" = 18)) +
+      values = temp_shape_vals) +
     scale_color_carto_c(
       palette = "ag_Sunset",
       direction = -1,
@@ -231,11 +309,12 @@ f3_a <- dom_new_ac %>%
         title.position = "top", 
         title.hjust = 0, 
         direction = "horizontal",
-        barwidth = unit(7, "cm"), 
+        barwidth = unit(4, "cm"), 
         ticks.colour = "black", 
         frame.colour = "black"),
       shape = guide_legend(
         order = 2,
+        nrow = 1,
         title.position = "top", 
         title.hjust = 0, 
         override.aes = list(size = 3)),
@@ -280,11 +359,7 @@ f3_b <- dom_new_pc %>%
       aes(year, absolute_bio, shape = fct_rev(as.character(temp_opt)), color = max_size), 
     size = 2) +
     scale_shape_manual(
-      values = c(
-        "16C" = 15,
-        "20C" = 16,
-        "24C" = 17,
-        "28C" = 18)) +
+      values = temp_shape_vals) +
     scale_color_carto_c(
       palette = "ag_Sunset",
       direction = -1,
@@ -335,15 +410,11 @@ f3_c <- dom_new_pr %>%
       alpha = 0.4) +
     geom_point(
       aes(year, absolute_bio, shape = fct_rev(as.character(temp_opt)), color = max_size), 
-    size = 2) +
+      size = 2) +
     scale_shape_manual(
-      values = c(
-        "16C" = 15,
-        "20C" = 16,
-        "24C" = 17,
-        "28C" = 18)) +
+      values = temp_shape_vals) +
     scale_color_carto_c(
-      palette = "BluYl",
+      palette = "ag_GrnYl",
       direction = -1,
       trans = "log10",
       labels = label_log(base = 10),
@@ -356,14 +427,15 @@ f3_c <- dom_new_pr %>%
       expand = expansion(add = c(0.5,0.5)),
       breaks = c(0:9)) +
     guides(
-      shape = "none",
       color = guide_colorbar(
+        order = 1,
         title.position = "top", 
         title.hjust = 0, 
         direction = "horizontal",
-        barwidth = unit(7, "cm"), 
+        barwidth = unit(4, "cm"), 
         ticks.colour = "black", 
         frame.colour = "black"),
+      shape = "none",
       fill = "none") +
     facet_grid(season~hw_season, scales = "free_y") +
     theme(
@@ -375,53 +447,64 @@ f3_c <- dom_new_pr %>%
       x = "Year",
       color = "Protist Maximum Body Size",
       shape = "Temperature Optima",
-      fill = "Heatwave Timing:"
-    )
+      fill = "Heatwave Timing:")
 
 
 
-# Assemble
-f3_cops <- (f3_a / f3_b) + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-f3_all <- f3_cops / f3_c
+# Assemble vertical
+f3_all <- (f3_a / f3_b / f3_c) + plot_layout(guides = "collect") & theme(legend.position = "right")
 f3_all
+```
 
-# Pull out the legend separately
-library(ggpubr)
-as_ggplot(get_legend(f3_b))
+
+```{r}
+#  Futzing with the legend and arrangement
+
+# # Pull out the legend separately if we want to reorganize
+cop_leg <- as_ggplot(get_legend(f3_a))
+prot_leg <- as_ggplot(get_legend(f3_c))
+both_leg <- cop_leg / prot_leg  +  plot_layout(heights = c(3,1))
+
+# # Rebuild
+f3_rebuilt <- (f3_a | f3_c) / (f3_b | both_leg) & theme(legend.position = "none")
+f3_rebuilt
 
 ```
 
 
-# Working here
 
-Roger says to do a summary fig AND the shiny, what a jerk
+## Figure Change: No body size
+
+Body Size isn't talked about in the text so we could drop that and simplify the figures
 
 
 ```{r}
-#| label: fig-3-dev
+#| label: figure-3-justtemps
 
-# about: the plots with 500 lines are so hard to
-# make sense of. If the comoparison is the different thermal preferences, let's highlight that
-
-
-dom_new_pr <- mutate(dom_new_pr, temp_opt = str_c(temp_opt, "C"))
-dom_new_pc <- mutate(dom_new_pc, temp_opt = str_c(temp_opt, "C"))
-dom_new_ac <- mutate(dom_new_ac, temp_opt = str_c(temp_opt, "C"))
+  
+  
+# Color and data for the heatwave boxes
+hw_fill <- c("transparent", "#FDDBC770")
 
 
-# Highlight thermal preference:
-ggplot(dom_new_pr) +
-  # geom_point(aes(year, absolute_bio, color = hw_season),
-  #            position = position_jitter(width = 0.2), alpha = 0.4) +
-  geom_density(aes(year, absolute_bio, fill = hw_season)) +
-  facet_grid(temp_opt~season)
+# Colors for thermal optima
+manual_cols <- c(
+  "16C" = gmri_cols("blue"),
+  "20C" = gmri_cols("green"),
+  "24C" = gmri_cols("yellow"),
+  "28C" = gmri_cols("orange")
+)
 
 
 
-# Hate this
-dom_new_pr %>% 
-  mutate(taxa_id = str_c(hw_season, taxa_id)) %>% 
-  ggplot() +
+# Dominant Copepod
+rect_df <- data.frame(
+  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
+  xmin = c(-0.5, 0.5),
+  xmax = c(0.5, 1.5),
+  ymin = rep(0, 2),
+  ymax = rep(6, 2))
+f3_a <-  ggplot(dom_new_ac) +
     geom_rect(
       data = rect_df,
       aes(xmin = xmin, xmax = xmax,
@@ -430,39 +513,464 @@ dom_new_pr %>%
       color = "transparent",
       alpha = 0.9) +
     geom_line(
-      aes(year, absolute_bio, group = taxa_id, color = hw_season), 
+      aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
       show.legend = F, 
       linewidth = 0.7, 
       alpha = 0.4) +
     geom_point(
-      aes(year, absolute_bio, color = hw_season), 
+      aes(year, absolute_bio, color = temp_opt), 
     size = 2) +
-  facet_grid(season~temp_opt, scales = "free_y") +
-    scale_color_gmri() +
+    scale_color_manual(values = manual_cols) +
     scale_fill_manual(values = hw_fill) +
     scale_x_continuous(
       limits = c(0, 7),
       expand = expansion(add = c(0.5,0.5)),
       breaks = c(0:9)) +
     guides(
-      fill = guide_legend(title.position = "top"),
-      color = guide_legend(
-        title.position = "top", 
-        title.hjust = 0, nrow = 2)) +
+      color = "none",
+      fill = "none") +
+    facet_grid(season~hw_season, scales = "free_y") +
     theme(
-      legend.position = "bottom",
+      legend.position = "right",
       panel.grid = element_blank(),
-      panel.background = element_rect(color = "black", fill = "transparent")) +
+      panel.background = element_rect(color = "black", fill = "transparent"),
+      strip.text.y = element_text(angle = 0)) +
     labs(
+      title = "A. Active Copepods",
+      y = expression(paste("Absolute biomass (mg C ", m^{-3}, ")")),
+      x = NULL,
+      color = "Thermal Optima",
+      fill = "Heatwave Timing:")
+
+
+
+
+# Passive Copepod
+rect_df <- data.frame(
+  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
+  xmin = c(-0.5, 0.5),
+  xmax = c(0.5, 1.5),
+  ymin = rep(0, 2),
+  ymax = rep(7, 2))
+f3_b <- ggplot(dom_new_pc) +
+    geom_rect(
+      data = rect_df,
+      aes(xmin = xmin, xmax = xmax,
+          ymin = ymin, ymax = ymax,
+          fill = hw_status),
+      color = "transparent",
+      alpha = 0.9) +
+    geom_line(
+      aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
+      show.legend = F, 
+      linewidth = 0.7, 
+      alpha = 0.4) +
+    geom_point(
+      aes(year, absolute_bio, color = temp_opt), 
+    size = 2) +
+    scale_color_manual(values = manual_cols) +
+    scale_fill_manual(values = hw_fill) +
+    scale_y_continuous(limits = c(0, 8) ) +
+    scale_x_continuous(
+      limits = c(0, 7),
+      expand = expansion(add = c(0.5,0.5)),
+      breaks = c(0:9)) +
+    guides(
+      shape = "none",
+      color = "none",
+      fill = "none") +
+    facet_grid(season~hw_season, scales = "free_y") +
+    theme(
+      legend.position = "right",
+      panel.grid = element_blank(),
+      panel.background = element_rect(color = "black", fill = "transparent"),
+      strip.text.y = element_text(angle = 0)) +
+    labs(
+      title = "B. Passive Copepods",
+      y = expression(paste("Absolute biomass (mg C ", m^{-3}, ")")),
+      x = NULL,
+      color = "Thermal Optima",
+      fill = "Heatwave Timing:")
+
+
+
+
+# Protists
+rect_df <- data.frame(
+  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
+  xmin = c(-0.5, 0.5),
+  xmax = c(0.5, 1.5),
+  ymin = rep(0, 2),
+  ymax = rep(28, 2))
+f3_c <-  ggplot(dom_new_pr) +
+    geom_rect(
+      data = rect_df,
+      aes(xmin = xmin, xmax = xmax,
+          ymin = ymin, ymax = ymax,
+          fill = hw_status),
+      color = "transparent",
+      alpha = 0.9) +
+    geom_line(
+      aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
+      show.legend = F, 
+      linewidth = 0.7, 
+      alpha = 0.4) +
+    geom_point(
+      aes(year, absolute_bio, color = temp_opt), 
+      size = 2) +
+    scale_color_manual(values = manual_cols) +
+    scale_fill_manual(values = hw_fill) +
+    scale_x_continuous(
+      limits = c(0, 7),
+      expand = expansion(add = c(0.5,0.5)),
+      breaks = c(0:9)) +
+    guides(
+      color = guide_legend(
+        order = 1,
+        title.position = "top", 
+        title.hjust = 0, 
+        direction = "vertical",
+        ticks.colour = "black", 
+        frame.colour = "black", 
+        override.aes = list(size = rep(3, 4))),
+      fill = guide_legend(
+        order = 2,
+        title.position = "top", 
+        title.hjust = 0, nrow = 2,
+        direction = "vertical",
+        keyheight = unit(0.8, "cm"),
+        override.aes = list(color = "black"))) +
+    facet_grid(season~hw_season) +
+    theme(
+      legend.position = "right", 
+      panel.grid = element_blank(),
+      panel.background = element_rect(color = "black", fill = "transparent"),
+      strip.text.y = element_text(angle = 0)) +
+    labs(
+      title = "C. Protists",
       y = expression(paste("Absolute biomass (mg C ", m^{-3}, ")")),
       x = "Year",
-      fill = "Heatwave Timing:"
-    )
+      color = "Thermal Optima",
+      fill = "Heatwave Timing:")
 
+
+
+# Assemble
+f3_new <- (f3_a / f3_b / f3_c) + plot_layout(guides = "collect") & theme(legend.position = "right")
+f3_new
+```
+
+
+```{r}
+#  Futzing with the legend and arrangement
+
+# # Pull out the legend separately if we want to reorganize
+legend_gg <- as_ggplot(get_legend(f3_c) )
+
+# # Rebuild
+f3_nosize <- (f3_a | (f3_c+theme(legend.position = "none"))) / (f3_b | legend_gg) 
+f3_nosize
 
 ```
 
 
 
 
+
+
+
+
+## Plots that follow in-text statements
+
+
+
+
+```{r}
+#| label: fig-3-dev
+
+# about: the plots with 500 lines are so hard to
+# make sense of. If the comparison is the different thermal preferences, let's highlight that
+
+
+# What if we put everything into one table
+# don't facet everything out
+# use color for thermal preference
+
+dom_all <- bind_rows(
+  list(
+    dom_new_ac,
+    dom_new_pc,
+    dom_new_pr)) %>% 
+  mutate(taxa_id = str_c(functional_group, "-", taxa_id))
+
+# Get the metadata
+dom_all_meta <- distinct(dom_all, functional_group, taxa_id, temp_opt, min_size, max_size)
+```
+
+
+### Statement 1: Community Composition - Thermal Opt
+
+> Overall, the plankton community is dominated by groups with temperature optima of 20 ˚C and 24 ˚C (Fig. 3). 
+
+Claires comment: this statement needs functional groups and should be annual summary.
+
+
+```{r}
+# C: Composition 
+
+# Do an all season total
+dom_all_totals <- bind_rows(
+  list(
+    # total up all the seasons within each hw season
+    dom_all %>% 
+      group_by(temp_opt, functional_group, hw_season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop") %>% 
+      mutate(season = "Overall Total"),
+    # total up the seasons
+    dom_all %>% 
+      group_by(functional_group, temp_opt, hw_season, season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop")
+  )) %>% 
+  mutate(season = factor(
+    season, levels = c("Overall Total", "Spring", "Summer", "Autumn", "Winter"))) 
+
+
+
+
+# table for hw event boxes
+mhw_df <- data.frame(
+  "x" = rep(1, 4), 
+  "y" = rep(1, 4),
+  season = c("Winter", "Autumn", "Spring", "Summer"),
+  "hw_season" = str_c(c("Winter", "Autumn", "Spring", "Summer"), " Heatwave")) %>% 
+  mutate(season = factor(
+    season,
+    levels = c("Overall Total", "Spring", "Summer", "Autumn", "Winter")))
+
+
+
+
+
+# Make the plot
+dom_all_totals %>% 
+ggplot() +
+    scale_fill_gmri() +
+    geom_col(
+      aes(
+        y = functional_group, 
+        x = absolute_bio, fill = temp_opt), 
+      color = "gray40",
+      alpha = 0.8, position = "fill") +
+    scale_x_continuous(
+      breaks = c(0.25, .5, 0.75), 
+      labels = label_percent(),
+      expand = expansion(add = c(0.05,0.05))) +
+    facet_nested(hw_season ~ season ) +
+    theme(strip.text.y = element_text(angle = 0),
+          panel.grid = element_blank()) +
+    labs(title = "Dominant Taxa Seasonal Composition",
+         fill = "Temperature\nOptima",
+         x = "Percent Abundance",
+         y = "Functional Group")
+```
+
+
+
+Try doughnut plots, overall totals
+
+```{r}
+#| fig-height: 10
+
+
+# Make the plot - doughnuts
+
+dom_all_totals %>% 
+  #filter(season == "Overall Total") %>% 
+  ggplot() +
+    scale_fill_gmri() +
+  geom_arc_bar(
+    aes(x0 = 0, y0 = 0, r0 = 0.2, r = 0.35, 
+        fill = temp_opt, amount = absolute_bio), 
+    stat = "pie") +
+    scale_x_continuous(
+      breaks = c(.5), 
+      labels = label_percent(),
+      expand = expansion(add = c(0.05,0.05))) +
+    facet_nested(functional_group + season ~ hw_season ) +
+    theme(
+      strip.text.y = element_text(angle = 0),
+      panel.grid = element_blank(),
+      axis.line = element_blank(),
+      axis.text = element_blank(),
+      legend.position = "bottom", 
+      legend.direction = "horizontal") +
+    labs(title = "Dominant Taxa Seasonal Composition",
+         fill = "Temperature\nOptima",
+         x = "Biomass Percentage")
+
+```
+
+### Statement 2: Community Composition - Thermal Opt
+
+> The temperature norms of dominant groups track the annual mean temperature, not the Sea Surface Temperature seasonality (Fig. 3), 
+
+This statement is not in original figure three at all, and speaks to whether or not species follow what the ambient temperature is or not.
+
+
+```{r}
+# C: Composition 
+
+# Do an all season total
+dom_all_yr_totals <- bind_rows(
+  list(
+    # total up all the seasons within each hw season
+    dom_all %>% 
+      group_by(year, temp_opt, hw_season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop") %>% 
+      mutate(season = "Overall Total"),
+    # total up the seasons
+    dom_all %>% 
+      group_by(year, temp_opt, hw_season, season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop")
+  )) %>% 
+  mutate(season = factor(
+    season, levels = c("Overall Total", "Spring", "Summer", "Autumn", "Winter"))) 
+
+
+
+
+# table for hw event boxes
+mhw_df <- data.frame(
+  "x" = rep(1, 4), 
+  "y" = rep(1, 4),
+  season = c("Winter", "Autumn", "Spring", "Summer"),
+  "hw_season" = str_c(c("Winter", "Autumn", "Spring", "Summer"), " Heatwave")) %>% 
+  mutate(season = factor(
+    season,
+    levels = c("Overall Total", "Spring", "Summer", "Autumn", "Winter")))
+
+
+
+
+
+# Make the plot
+dom_all_yr_totals %>% 
+ggplot() +
+    geom_col(
+      aes(x = year, y = absolute_bio, fill = temp_opt), 
+      alpha = 0.8, position = "fill", color = "gray40") +
+    geom_col(
+      data = mhw_df,
+      aes(x,y), 
+      color = "black", fill = "transparent", linewidth = 1) +
+    scale_fill_gmri() +
+    scale_y_continuous(breaks = c(0.25,.5, 0.75), 
+                       labels = label_percent()) +
+    scale_x_continuous(
+      limits = c(-0.5, 6.5),
+      expand = expansion(add = c(0.5,0.5)),
+      breaks = c(0:6)) +
+    facet_nested(hw_season ~ season ) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    labs(title = "Dominant Taxa Seasonal Composition",
+         fill = "Temperature\nOptima",
+         x = "Year",
+         y = "Abundance %")
+
+```
+
+### Statement 3: Community Composition - Functional Groups
+
+> Examining community composition, heatwaves alter the order of dominant groups based on their relative contribution to the total biomass at the time (Fig. 3). 
+
+
+^This speaks to functional group change following MHW
+
+If we combine the functional groups to one table we can do the community as a whole, and highlight the temperature optima of whatever and not focus so heavily on functional groups
+
+```{r}
+# So we're interested in composition
+
+
+# Do an all season total
+dom_fgroup_totals <- bind_rows(
+  list(
+    # total up all the seasons within each hw season
+    dom_all %>% 
+      group_by(year, functional_group, hw_season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop") %>% 
+      mutate(season = "Overall Total"),
+    # total up the seasons
+    dom_all %>% 
+      group_by(year, functional_group, hw_season, season) %>% 
+      summarise(absolute_bio = sum(absolute_bio),
+               .groups = "drop")
+  )) %>% 
+  mutate(season = factor(
+    season, levels = c("Overall Total", "Spring", "Summer", "Autumn", "Winter"))) 
+
+
+
+# Make the plot
+dom_fgroup_totals %>% 
+  ggplot() +
+  geom_col(
+    aes(x = year, y = absolute_bio, fill =  functional_group), 
+    alpha = 0.8, color = "gray40", position = "fill") +
+  geom_col(
+    data = mhw_df,
+    aes(x,y), 
+    color = "black", fill = "transparent", linewidth = 1) +
+  scale_fill_gmri() +
+  scale_y_continuous(
+    breaks = c(0.25,.5, 0.75), 
+    labels = label_percent()) +
+  scale_x_continuous(
+    limits = c(-0.5, 6.5),
+    expand = expansion(add = c(0.5,0.5)),
+    breaks = c(0:6)) +
+  facet_nested(hw_season ~ season ) +
+  theme(strip.text.y = element_text(angle = 0)) +
+  labs(title = "Dominant Taxa Functional Group Composition",
+       fill = "Functional Group",
+       x = "Year",
+       y = "Abundance %")
+
+```
+
+
+
+## Change in year x from year x-1
+
+```{r}
+# B. Net-Change
+dom_all %>% 
+  group_by( year, temp_opt, hw_season, season) %>% 
+  summarise(absolute_bio = sum(absolute_bio),
+            .groups = "drop") %>%
+  group_by(temp_opt, hw_season, season) %>% 
+  arrange(year) %>% 
+  mutate(bio_change = lag(absolute_bio, 1) - absolute_bio) %>% 
+  ggplot() +
+    geom_rect(
+    data = rect_df[2,],
+      aes(xmin = xmin, xmax = xmax,
+          ymin = ymin, ymax = ymax),
+      fill = hw_fill[2],
+    color = "transparent", alpha = 0.9) +
+    scale_fill_gmri() +
+    geom_col(
+      aes(x = year, y = bio_change, fill = temp_opt), 
+      alpha = 0.8,
+      color = "gray40") +
+    facet_nested(hw_season ~ season) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    labs(title = "B. Biomass Change")
+
+```
 

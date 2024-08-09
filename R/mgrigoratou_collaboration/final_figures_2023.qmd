@@ -2089,12 +2089,14 @@ dom_new_pr <- dom_new_pr %>%
 
 
 
+
+
+
 #### Paper Figure 3, Two Scales
 
 ```{r}
 #| label: figure-3-twoscales
 
-  
   
 # Testing
 hw_fill <- c("transparent", "#FDDBC770")
@@ -2313,76 +2315,7 @@ f3_cops / f3_c
 
 # Working here
 
-Roger says to do a summary fig AND the shiny, what a jerk
-
-
-```{r}
-#| label: fig-3-dev
-
-# about: the plots with 500 lines are so hard to
-# make sense of. If the comoparison is the different thermal preferences, let's highlight that
-
-
-dom_new_pr <- mutate(dom_new_pr, temp_opt = str_c(temp_opt, "C"))
-dom_new_pc <- mutate(dom_new_pc, temp_opt = str_c(temp_opt, "C"))
-dom_new_ac <- mutate(dom_new_ac, temp_opt = str_c(temp_opt, "C"))
-
-
-# Highlight thermal preference:
-ggplot(dom_new_pr) +
-  # geom_point(aes(year, absolute_bio, color = hw_season),
-  #            position = position_jitter(width = 0.2), alpha = 0.4) +
-  geom_density(aes(year, absolute_bio, fill = hw_season)) +
-  facet_grid(temp_opt~season)
-
-
-
-# Hate this
-dom_new_pr %>% 
-  mutate(taxa_id = str_c(hw_season, taxa_id)) %>% 
-  ggplot() +
-    geom_rect(
-      data = rect_df,
-      aes(xmin = xmin, xmax = xmax,
-          ymin = ymin, ymax = ymax,
-          fill = hw_status),
-      color = "transparent",
-      alpha = 0.9) +
-    geom_line(
-      aes(year, absolute_bio, group = taxa_id, color = hw_season), 
-      show.legend = F, 
-      linewidth = 0.7, 
-      alpha = 0.4) +
-    geom_point(
-      aes(year, absolute_bio, color = hw_season), 
-    size = 2) +
-  facet_grid(season~temp_opt, scales = "free_y") +
-    scale_color_gmri() +
-    scale_fill_manual(values = hw_fill) +
-    scale_x_continuous(
-      limits = c(0, 7),
-      expand = expansion(add = c(0.5,0.5)),
-      breaks = c(0:9)) +
-    guides(
-      fill = guide_legend(title.position = "top"),
-      color = guide_legend(
-        title.position = "top", 
-        title.hjust = 0, nrow = 2)) +
-    theme(
-      legend.position = "bottom",
-      panel.grid = element_blank(),
-      panel.background = element_rect(color = "black", fill = "transparent")) +
-    labs(
-      y = expression(paste("Absolute biomass (mg C ", m^{-3}, ")")),
-      x = "Year",
-      fill = "Heatwave Timing:"
-    )
-
-
-```
-
-
-
+Moved this to a new doc
 
 
 
