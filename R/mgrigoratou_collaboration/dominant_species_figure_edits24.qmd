@@ -48,7 +48,8 @@ theme_set(
     legend.text = element_text(size = 11),
     strip.background = element_rect(color = "black"),
     panel.background = element_rect(color = "black"),
-    panel.grid.minor = element_blank())
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(color = "black", fill = "transparent"))
 )
 
 # levels for season factors
@@ -99,9 +100,12 @@ Reviewer Comment:
 
 
 
-# Fig 5. Dominant Species Biomass
+# Fig 5. Dominant Species Biomass - Fixed
 
  Absolute seasonal biomass concentration anomalies of the dominant groups of (a.) protists, (b.) passive and (a.) active copepod feeders for the autumn HW scenario during the heatwave and 2 years after the heatwave.   
+
+
+
 
 
 ```{r}
@@ -473,7 +477,7 @@ f3_rebuilt
 
 
 
-## Figure Change: No body size
+## Figure 3 Changes: No body size 
 
 Body Size isn't talked about in the text so we could drop that and simplify the figures
 
@@ -481,29 +485,35 @@ Body Size isn't talked about in the text so we could drop that and simplify the 
 ```{r}
 #| label: figure-3-justtemps
 
-  
-  
+
 # Color and data for the heatwave boxes
 hw_fill <- c("transparent", "#FDDBC770")
 
 
-# Colors for thermal optima
+# Colors for thermal optima:
+# # carto_pal(name = "Prism", n = 10)
+# "#5F4690" "#1D6996" "#38A6A5" "#0F8554" "#73AF48" "#EDAD08" "#E17C05" "#CC503E" "#94346E" "#666666"
+
 manual_cols <- c(
-  "16C" = gmri_cols("blue"),
-  "20C" = gmri_cols("green"),
-  "24C" = gmri_cols("yellow"),
-  "28C" = gmri_cols("orange")
+  "16C" = "#1D6996",
+  "20C" = "#0F8554",
+  "24C" = "#EDAD08",
+  "28C" = "#CC503E"
 )
 
 
 
-# Dominant Copepod
+
+# Rectangle geometry for heatwave period
 rect_df <- data.frame(
   hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
   xmin = c(-0.5, 0.5),
   xmax = c(0.5, 1.5),
-  ymin = rep(0, 2),
-  ymax = rep(6, 2))
+  ymin = rep(-Inf, 2),
+  ymax = rep(Inf, 2))
+
+
+# Dominant Copepod Plot
 f3_a <-  ggplot(dom_new_ac) +
     geom_rect(
       data = rect_df,
@@ -515,11 +525,12 @@ f3_a <-  ggplot(dom_new_ac) +
     geom_line(
       aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
       show.legend = F, 
-      linewidth = 0.7, 
-      alpha = 0.4) +
+      linewidth = 1, 
+      alpha = 0.6) +
     geom_point(
       aes(year, absolute_bio, color = temp_opt), 
-    size = 2) +
+      size = 2, 
+      alpha = 0.6) +
     scale_color_manual(values = manual_cols) +
     scale_fill_manual(values = hw_fill) +
     scale_x_continuous(
@@ -529,11 +540,11 @@ f3_a <-  ggplot(dom_new_ac) +
     guides(
       color = "none",
       fill = "none") +
-    facet_grid(season~hw_season, scales = "free_y") +
+    facet_grid(season~hw_season, scales = "free_y",
+               labeller = labeller(hw_season = label_wrap_gen(width = 10))) +
     theme(
       legend.position = "right",
       panel.grid = element_blank(),
-      panel.background = element_rect(color = "black", fill = "transparent"),
       strip.text.y = element_text(angle = 0)) +
     labs(
       title = "A. Active Copepods",
@@ -546,12 +557,6 @@ f3_a <-  ggplot(dom_new_ac) +
 
 
 # Passive Copepod
-rect_df <- data.frame(
-  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
-  xmin = c(-0.5, 0.5),
-  xmax = c(0.5, 1.5),
-  ymin = rep(0, 2),
-  ymax = rep(7, 2))
 f3_b <- ggplot(dom_new_pc) +
     geom_rect(
       data = rect_df,
@@ -563,14 +568,14 @@ f3_b <- ggplot(dom_new_pc) +
     geom_line(
       aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
       show.legend = F, 
-      linewidth = 0.7, 
-      alpha = 0.4) +
+      linewidth = 1, 
+      alpha = 0.6) +
     geom_point(
       aes(year, absolute_bio, color = temp_opt), 
-    size = 2) +
+      size = 2, 
+      alpha = 0.6) +
     scale_color_manual(values = manual_cols) +
     scale_fill_manual(values = hw_fill) +
-    scale_y_continuous(limits = c(0, 8) ) +
     scale_x_continuous(
       limits = c(0, 7),
       expand = expansion(add = c(0.5,0.5)),
@@ -579,16 +584,16 @@ f3_b <- ggplot(dom_new_pc) +
       shape = "none",
       color = "none",
       fill = "none") +
-    facet_grid(season~hw_season, scales = "free_y") +
+    facet_grid(season~hw_season, scales = "free_y",
+               labeller = labeller(hw_season = label_wrap_gen(10))) +
     theme(
       legend.position = "right",
       panel.grid = element_blank(),
-      panel.background = element_rect(color = "black", fill = "transparent"),
       strip.text.y = element_text(angle = 0)) +
     labs(
       title = "B. Passive Copepods",
       y = expression(paste("Absolute biomass (mg C ", m^{-3}, ")")),
-      x = NULL,
+      x = "Year",
       color = "Thermal Optima",
       fill = "Heatwave Timing:")
 
@@ -596,12 +601,6 @@ f3_b <- ggplot(dom_new_pc) +
 
 
 # Protists
-rect_df <- data.frame(
-  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
-  xmin = c(-0.5, 0.5),
-  xmax = c(0.5, 1.5),
-  ymin = rep(0, 2),
-  ymax = rep(28, 2))
 f3_c <-  ggplot(dom_new_pr) +
     geom_rect(
       data = rect_df,
@@ -613,11 +612,12 @@ f3_c <-  ggplot(dom_new_pr) +
     geom_line(
       aes(year, absolute_bio, group = taxa_id, color = temp_opt), 
       show.legend = F, 
-      linewidth = 0.7, 
-      alpha = 0.4) +
+      linewidth = 1, 
+      alpha = 0.6) +
     geom_point(
       aes(year, absolute_bio, color = temp_opt), 
-      size = 2) +
+      size = 2, 
+      alpha = 0.6) +
     scale_color_manual(values = manual_cols) +
     scale_fill_manual(values = hw_fill) +
     scale_x_continuous(
@@ -632,7 +632,9 @@ f3_c <-  ggplot(dom_new_pr) +
         direction = "vertical",
         ticks.colour = "black", 
         frame.colour = "black", 
-        override.aes = list(size = rep(3, 4))),
+        override.aes = list(
+          alpha = rep(1,4),
+          size = rep(3, 4))),
       fill = guide_legend(
         order = 2,
         title.position = "top", 
@@ -640,11 +642,11 @@ f3_c <-  ggplot(dom_new_pr) +
         direction = "vertical",
         keyheight = unit(0.8, "cm"),
         override.aes = list(color = "black"))) +
-    facet_grid(season~hw_season) +
+    facet_grid(season~hw_season, scales = "free_y",
+               labeller = labeller(hw_season = label_wrap_gen(10))) +
     theme(
       legend.position = "right", 
       panel.grid = element_blank(),
-      panel.background = element_rect(color = "black", fill = "transparent"),
       strip.text.y = element_text(angle = 0)) +
     labs(
       title = "C. Protists",
@@ -656,20 +658,74 @@ f3_c <-  ggplot(dom_new_pr) +
 
 
 # Assemble
-f3_new <- (f3_a / f3_b / f3_c) + plot_layout(guides = "collect") & theme(legend.position = "right")
-f3_new
-```
 
-
-```{r}
 #  Futzing with the legend and arrangement
-
-# # Pull out the legend separately if we want to reorganize
+# # Pull out the legend separately if we want to reorganize with it as a plot panel
 legend_gg <- as_ggplot(get_legend(f3_c) )
 
 # # Rebuild
 f3_nosize <- (f3_a | (f3_c+theme(legend.position = "none"))) / (f3_b | legend_gg) 
 f3_nosize
+
+```
+
+
+```{r}
+#| eval: false
+                                                 
+"
+In figure 3 
+1. Its hard to see which temperature optima dominate, 
+2. is there another way to visualize this pattern? 
+3. Also using a common color scale for sizes of protists and copepods seems unnecessary, and reduces the dynamic range within each panel.
+"          
+
+
+
+  
+# Color and data for the heatwave boxes
+hw_fill <- c("transparent", "#FDDBC770")
+
+
+# Colors for thermal optima
+manual_cols <- c(
+  "16C" = gmri_cols("gmri blue"),
+  "20C" = gmri_cols("moss green"),
+  "24C" = gmri_cols("warm yellow"),
+  "28C" = gmri_cols("lv orange")
+)
+
+
+# What if: facet thermal optima?
+rect_df <- data.frame(
+  hw_status = c("Year 0:\nPre-heatwave Equilibrium", "Year 1:\nSeasonal heatwave"),
+  xmin = c(-0.5, 0.5),
+  xmax = c(0.5, 1.5),
+  ymin = rep(-Inf, 2),
+  ymax = rep(Inf, 2))
+dom_new_all <- bind_rows(list(dom_new_pr, dom_new_ac, dom_new_pc))
+ggplot(dom_new_all) +
+  geom_rect(
+      data = rect_df,
+      aes(xmin = xmin, xmax = xmax,
+          ymin = ymin, ymax = ymax,
+          fill = hw_status),
+      color = "transparent",
+      alpha = 0.9) +
+  geom_vline(data = manual_grid, aes(xintercept = x), linewidth = 0.35, alpha = 0.35, color = "gray") +
+  geom_hline(data = manual_grid, aes(yintercept = y), linewidth = 0.35, alpha = 0.15, color = "gray") +
+  # geom_point(aes(x = year, y = absolute_bio, color = temp_opt, shape = functional_group)) +
+  geom_line(
+    aes(x = year, y = absolute_bio, color = temp_opt, group = str_c(functional_group, taxa_id, season, hw_season)), linewidth = 1, alpha = 0.4) +
+  # facet_grid(hw_season~functional_group) +
+  scale_color_gmri() +
+  scale_fill_manual(values = hw_fill) +
+  theme(
+    # panel.background = element_rect(fill = "transparent"),
+    # panel.ontop = T,
+    panel.border = element_rect(color = "black", fill = "transparent")
+    )
+
 
 ```
 
